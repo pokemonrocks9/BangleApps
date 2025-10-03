@@ -2,65 +2,130 @@
   <head>
     <link rel="stylesheet" href="../../css/spectre.min.css">
     <style>
-      .container {
+      body {
+        padding: 20px;
         max-width: 400px;
         margin: 0 auto;
-        padding: 10px;
+      }
+      .heart {
+        font-size: 40px;
+        text-align: center;
+        margin: 20px 0;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .section {
+        margin-bottom: 30px;
+      }
+      .link-code {
+        background: #5755d9;
+        color: white;
+        padding: 20px;
+        border-radius: 4px;
+        text-align: center;
+        margin: 15px 0;
+        font-size: 24px;
+        font-weight: bold;
+        letter-spacing: 3px;
+      }
+      .radio-option {
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      .radio-option.selected {
+        border-color: #5755d9;
+        background: #f0f0ff;
+      }
+      .hidden {
+        display: none;
+      }
+      .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .alert-info {
+        background: #e7f3ff;
+        border-left: 3px solid #2196f3;
+      }
+      .alert-warning {
+        background: #fff8e1;
+        border-left: 3px solid #ff9800;
+      }
+      .alert-success {
+        background: #e8f5e9;
+        border-left: 3px solid #4caf50;
+      }
+      .name-button {
+        width: 100%;
+        margin-bottom: 8px;
+      }
+      .name-button.selected {
+        background: #5755d9;
+        color: white;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <p><b>Thinking of You Setup</b></p>
-      <p>Configure your connection to send and receive pings with your partner.</p>
-      
-      <div class="form-group">
-        <label class="form-label">Your Name:</label>
-        <input type="text" id="myName" class="form-input" placeholder="Enter your name">
+    <div class="heart">♥</div>
+    <h1>Thinking of You</h1>
+    
+    <div class="section">
+      <label class="form-label">Your Name</label>
+      <input type="text" id="myName" class="form-input" placeholder="Enter your name" maxlength="30">
+      <div id="nameChangeWarning" class="alert alert-warning hidden">
+        Changing your name will update it for this connection.
       </div>
-      
-      <div class="form-group">
-        <label class="form-label">Connection Type:</label>
-        <label class="form-radio">
+    </div>
+    
+    <div class="section">
+      <label class="form-label">Connection Type</label>
+      <div class="radio-group">
+        <label class="radio-option" id="createOption">
           <input type="radio" name="setupType" value="create" checked>
-          <i class="form-icon"></i> Create New Connection
+          <strong>Create New Connection</strong>
+          <div><small>Start a new connection and share your code</small></div>
         </label>
-        <label class="form-radio">
+        
+        <label class="radio-option" id="joinOption">
           <input type="radio" name="setupType" value="join">
-          <i class="form-icon"></i> Join Existing Connection
+          <strong>Join Existing Connection</strong>
+          <div><small>Enter your partner's code</small></div>
         </label>
       </div>
       
       <div id="createSection">
-        <div class="form-group">
-          <label class="form-label">Your Link Code:</label>
-          <p><b><span id="linkCodeDisplay" style="font-size: 24px; letter-spacing: 3px;">------</span></b></p>
-          <p>Share this code with your partner</p>
+        <div class="link-code" id="linkCodeDisplay">------</div>
+        <div class="alert alert-info">
+          Share this code with your partner
         </div>
         
-        <div class="form-group">
-          <label class="form-label">Discord Webhook URL (optional):</label>
-          <input type="text" id="webhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/...">
-        </div>
+        <label class="form-label">Discord Webhook (Optional)</label>
+        <input type="text" id="webhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/...">
       </div>
       
-      <div id="joinSection" style="display:none;">
-        <div class="form-group">
-          <label class="form-label">Partner's Link Code:</label>
-          <input type="text" id="partnerLinkCode" class="form-input" placeholder="Enter 6-character code" maxlength="6" style="text-transform: uppercase;">
-        </div>
-        <p><button id="checkCode" class="btn btn-primary">Check Code</button></p>
+      <div id="joinSection" class="hidden">
+        <label class="form-label">Partner's Link Code</label>
+        <input type="text" id="partnerLinkCode" class="form-input" placeholder="6-character code" maxlength="6" style="text-transform: uppercase;">
+        <button type="button" class="btn btn-primary" onclick="checkLinkCode()">Check Code</button>
         
-        <div id="nameSelectionSection" style="display:none;">
-          <p>Found existing connection! Select your name:</p>
+        <div id="nameSelectionSection" class="hidden">
+          <div class="alert alert-success">
+            Connection found! Select your name:
+          </div>
           <div id="nameButtons"></div>
         </div>
       </div>
-      
-      <p id="errorMessage" style="color: red; display: none;"></p>
-      
-      <p>Click <button id="upload" class="btn btn-primary">Upload</button></p>
     </div>
+    
+    <div id="errorMessage" class="toast toast-error hidden"></div>
+    
+    <button class="btn btn-primary btn-block btn-lg" onclick="saveConfig()">Save & Upload ♥</button>
     
     <script src="../../core/lib/customize.js"></script>
     <script>
@@ -85,46 +150,66 @@
         currentSettings.linkCode = generateLinkCode();
       }
       
+      const originalMyName = currentSettings.myName || '';
+      
       document.getElementById('myName').value = currentSettings.myName || '';
       document.getElementById('linkCodeDisplay').textContent = currentSettings.linkCode;
       document.getElementById('webhookUrl').value = currentSettings.webhookUrl || '';
       
+      document.getElementById('myName').addEventListener('input', function() {
+        const warning = document.getElementById('nameChangeWarning');
+        if (originalMyName && this.value.trim() !== originalMyName) {
+          warning.classList.remove('hidden');
+        } else {
+          warning.classList.add('hidden');
+        }
+      });
+      
+      const createOption = document.getElementById('createOption');
+      const joinOption = document.getElementById('joinOption');
+      const createSection = document.getElementById('createSection');
+      const joinSection = document.getElementById('joinSection');
+      
       document.querySelectorAll('input[name="setupType"]').forEach(radio => {
         radio.addEventListener('change', function() {
           if (this.value === 'create') {
-            document.getElementById('createSection').style.display = 'block';
-            document.getElementById('joinSection').style.display = 'none';
+            createSection.classList.remove('hidden');
+            joinSection.classList.add('hidden');
+            createOption.classList.add('selected');
+            joinOption.classList.remove('selected');
           } else {
-            document.getElementById('createSection').style.display = 'none';
-            document.getElementById('joinSection').style.display = 'block';
+            createSection.classList.add('hidden');
+            joinSection.classList.remove('hidden');
+            createOption.classList.remove('selected');
+            joinOption.classList.add('selected');
           }
         });
       });
       
       document.getElementById('partnerLinkCode').addEventListener('input', function(e) {
         this.value = this.value.toUpperCase();
-        document.getElementById('nameSelectionSection').style.display = 'none';
+        document.getElementById('nameSelectionSection').classList.add('hidden');
       });
       
-      document.getElementById('checkCode').addEventListener('click', async function() {
+      async function checkLinkCode() {
         const code = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
         const errorMsg = document.getElementById('errorMessage');
         
         if (code.length !== 6) {
-          errorMsg.textContent = 'Please enter a valid 6-character link code';
-          errorMsg.style.display = 'block';
+          errorMsg.textContent = 'Please enter a valid 6-character code';
+          errorMsg.classList.remove('hidden');
           return;
         }
         
-        errorMsg.style.display = 'none';
+        errorMsg.classList.add('hidden');
         
         try {
           const response = await fetch(`${API_ENDPOINT}/whoIsRegistered?linkCode=${code}`);
           const data = await response.json();
           
           if (!data.exists || data.registeredNames.length === 0) {
-            errorMsg.textContent = 'No one has registered with this code yet';
-            errorMsg.style.display = 'block';
+            errorMsg.textContent = 'No one registered with this code yet';
+            errorMsg.classList.remove('hidden');
             return;
           }
           
@@ -133,34 +218,32 @@
           
           data.registeredNames.forEach(name => {
             const btn = document.createElement('button');
-            btn.className = 'btn';
+            btn.className = 'btn name-button';
             btn.textContent = name;
-            btn.style.marginRight = '5px';
-            btn.style.marginBottom = '5px';
             btn.onclick = function() {
               document.getElementById('myName').value = name;
-              document.querySelectorAll('#nameButtons .btn').forEach(b => b.classList.remove('btn-primary'));
-              btn.classList.add('btn-primary');
+              document.querySelectorAll('.name-button').forEach(b => b.classList.remove('selected'));
+              btn.classList.add('selected');
             };
             nameButtons.appendChild(btn);
           });
           
-          document.getElementById('nameSelectionSection').style.display = 'block';
+          document.getElementById('nameSelectionSection').classList.remove('hidden');
           
         } catch (error) {
-          errorMsg.textContent = 'Error checking link code. Please try again.';
-          errorMsg.style.display = 'block';
+          errorMsg.textContent = 'Error checking code. Try again.';
+          errorMsg.classList.remove('hidden');
         }
-      });
+      }
       
-      document.getElementById('upload').addEventListener('click', function() {
+      function saveConfig() {
         const myNameInput = document.getElementById('myName').value.trim();
         const setupType = document.querySelector('input[name="setupType"]:checked').value;
         const errorMsg = document.getElementById('errorMessage');
         
         if (!myNameInput) {
           errorMsg.textContent = 'Please enter your name';
-          errorMsg.style.display = 'block';
+          errorMsg.classList.remove('hidden');
           return;
         }
         
@@ -170,8 +253,8 @@
         if (setupType === 'join') {
           partnerLinkCode = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
           if (partnerLinkCode.length !== 6) {
-            errorMsg.textContent = 'Please enter a valid 6-character link code';
-            errorMsg.style.display = 'block';
+            errorMsg.textContent = 'Please enter a valid 6-character code';
+            errorMsg.classList.remove('hidden');
             return;
           }
         } else {
@@ -195,7 +278,7 @@
             }
           ]
         });
-      });
+      }
     </script>
   </body>
 </html>
