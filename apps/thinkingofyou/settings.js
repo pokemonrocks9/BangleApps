@@ -1,7 +1,10 @@
 (function(back) {
+  const CONFIGURL = "https://pokemonrocks9.github.io/thinking-of-you-config/";
+
+  // Load current settings
   const storage = require('Storage');
   const settings = storage.readJSON('thinkingofyou.json', true) || {};
-  
+
   function generateLinkCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
@@ -10,104 +13,62 @@
     }
     return code;
   }
-  
+
   // Generate link code if needed
   if (!settings.linkCode) {
     settings.linkCode = generateLinkCode();
     storage.writeJSON('thinkingofyou.json', settings);
   }
-  
-  function save() {
-    storage.writeJSON('thinkingofyou.json', settings);
-  }
-  
-  // Main menu
-  function showMainMenu() {
-    const menu = {
-      '': { 'title': 'Thinking of You' },
-      '< Back': back,
-      'My Name': {
-        value: settings.myName || 'Not set',
-        format: v => v || 'Not set',
-        onchange: () => {
-          E.showPrompt('Enter your name:').then(name => {
-            if (name) {
-              settings.myName = name;
-              settings.isConfigured = true;
-              save();
-              showMainMenu();
-            }
-          });
-        }
-      },
-      'Setup Type': {
-        value: settings.setupType || 'create',
-        format: v => v === 'create' ? 'Create New' : 'Join Existing',
-        onchange: v => {
-          settings.setupType = v;
-          save();
-          showMainMenu();
-        }
+
+  // Build URL with current settings
+  const url = CONFIGURL + '?' + 
+              'linkCode=' + encodeURIComponent(settings.linkCode || '') +
+              '&myName=' + encodeURIComponent(settings.myName || '') +
+              '&partnerName=' + encodeURIComponent(settings.partnerName || '') +
+              '&webhookUrl=' + encodeURIComponent(settings.webhookUrl || '');
+
+  // For Bangle.js, we need to handle the settings return via the App Loader
+  // The settings page should be opened in the App Loader web interface
+  // When settings are saved, they'll be returned as a JavaScript object
+
+  // This function will be called by the App Loader with the returned settings
+  if (typeof exports !== 'undefined') {
+    exports.url = url;
+    exports.onReturn = function(newSettings) {
+      if (!newSettings) {
+        back();
+        return;
       }
+
+      // Load existing settings
+      const currentSettings = storage.readJSON('thinkingofyou.json', true) || {};
+
+      // Update with new values
+      if (newSettings.myName) {
+        currentSettings.myName = newSettings.myName;
+      }
+
+      if (newSettings.partnerName) {
+        currentSettings.partnerName = newSettings.partnerName;
+      }
+
+      if (newSettings.webhookUrl !== undefined) {
+        currentSettings.webhookUrl = newSettings.webhookUrl;
+      }
+
+      // Handle joining with partner's link code
+      if (newSettings.partnerLinkCode) {
+        currentSettings.linkCode = newSettings.partnerLinkCode;
+      }
+
+      // Update configured status
+      currentSettings.isConfigured = (currentSettings.myName !== '' && currentSettings.myName !== undefined);
+
+      // Save updated settings
+      storage.writeJSON('thinkingofyou.json', currentSettings);
+
+      // Return to app
+      back();
     };
-    
-    if (settings.setupType === 'create' || !settings.setupType) {
-      // Show options for creating a new connection
-      menu['My Link Code'] = {
-        value: settings.linkCode,
-        format: v => v || 'None'
-      };
-      menu['Webhook URL'] = {
-        value: settings.webhookUrl ? 'Set' : 'Not set',
-        format: v => v,
-        onchange: () => {
-          E.showPrompt('Webhook URL:').then(url => {
-            if (url !== null) {
-              settings.webhookUrl = url;
-              save();
-              showMainMenu();
-            }
-          });
-        }
-      };
-    } else {
-      // Show options for joining existing connection
-      menu['Partner Code'] = {
-        value: settings.partnerLinkCode || 'Not set',
-        format: v => v || 'Not set',
-        onchange: () => {
-          E.showPrompt('Partner Link Code:').then(code => {
-            if (code && code.length === 6) {
-              settings.partnerLinkCode = code.toUpperCase();
-              settings.linkCode = code.toUpperCase();
-              save();
-              E.showMessage('Code saved!', 'Thinking of You');
-              setTimeout(() => showMainMenu(), 1500);
-            } else if (code) {
-              E.showMessage('Code must be\n6 characters', 'Error');
-              setTimeout(() => showMainMenu(), 1500);
-            }
-          });
-        }
-      };
-    }
-    
-    // Add regenerate code option
-    menu['Regenerate Code'] = () => {
-      E.showPrompt('Generate new\nlink code?', {buttons:{'Yes':true,'No':false}}).then(yes => {
-        if (yes) {
-          settings.linkCode = generateLinkCode();
-          save();
-          E.showMessage('New code:\n' + settings.linkCode, 'Code Generated');
-          setTimeout(() => showMainMenu(), 2000);
-        } else {
-          showMainMenu();
-        }
-      });
-    };
-    
-    E.showMenu(menu);
   }
-  
-  showMainMenu();
-})
+});
