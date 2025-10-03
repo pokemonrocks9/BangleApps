@@ -9,7 +9,8 @@ let settings = {
   partnerName: '',
   linkCode: '',
   webhookUrl: '',
-  isConfigured: false
+  isConfigured: false,
+  isRegistered: false
 };
 
 let pollTimer = null;
@@ -23,13 +24,14 @@ function loadSettings() {
   settings.linkCode = stored.linkCode || generateLinkCode();
   settings.webhookUrl = stored.webhookUrl || '';
   settings.isConfigured = settings.myName !== '' && settings.linkCode !== '';
+  settings.isRegistered = stored.isRegistered || false;
   
   // Save link code if it was just generated
   if (!stored.linkCode) {
     saveSettings();
   }
   
-  console.log('Settings loaded:', settings.linkCode, settings.isConfigured);
+  console.log('Settings loaded:', settings.linkCode, settings.isConfigured, settings.isRegistered);
 }
 
 // Save settings to storage
@@ -70,14 +72,16 @@ function drawMainScreen(statusOverride) {
   // Status text - larger, centered
   g.setFont('6x8', 2);
   g.setFontAlign(0, 0);
-  const statusText = statusOverride || (settings.isConfigured ? 'Connected!' : 'Connecting...');
+  const statusText = statusOverride || (settings.isRegistered ? 'Connected!' : 'Connecting...');
   g.drawString(statusText, g.getWidth() / 2, 90);
   
   // Instruction text - smaller
   g.setFont('6x8', 1.5);
-  if (settings.isConfigured) {
+  if (settings.isRegistered) {
     g.drawString('Press button', g.getWidth() / 2, 130);
     g.drawString('to send', g.getWidth() / 2, 148);
+  } else if (settings.isConfigured) {
+    g.drawString('Registering...', g.getWidth() / 2, 130);
   } else {
     g.drawString('Open settings', g.getWidth() / 2, 130);
     g.drawString('on phone', g.getWidth() / 2, 148);
@@ -125,6 +129,7 @@ function registerWithBackend() {
   }
   
   console.log('Registering:', settings.linkCode, settings.myName);
+  drawMainScreen('Registering...');
   
   const payload = {
     linkCode: settings.linkCode,
@@ -142,17 +147,35 @@ function registerWithBackend() {
     res.on('data', (d) => data += d);
     res.on('end', () => {
       console.log('Register response:', res.statusCode, data);
+      if (res.statusCode === 200 || res.statusCode === 201) {
+        settings.isRegistered = true;
+        saveSettings();
+        drawMainScreen('Connected!');
+        setTimeout(() => {
+          drawMainScreen();
+        }, 2000);
+        startPolling();
+      } else {
+        drawMainScreen('Reg failed');
+        setTimeout(() => {
+          drawMainScreen();
+        }, 2000);
+      }
     });
   }).on('error', (e) => {
     console.log('Register error:', e);
+    drawMainScreen('Reg error');
+    setTimeout(() => {
+      drawMainScreen();
+    }, 2000);
   });
 }
 
 // Send ping to partner
 function sendPing() {
-  if (!settings.isConfigured) {
+  if (!settings.isRegistered) {
     Bangle.buzz(100);
-    drawMainScreen('Not configured');
+    drawMainScreen('Not ready');
     setTimeout(() => {
       drawMainScreen();
     }, 2000);
@@ -194,7 +217,7 @@ function sendPing() {
 
 // Check for incoming pings
 function checkForPings() {
-  if (!settings.isConfigured) return;
+  if (!settings.isRegistered) return;
   
   const url = API_ENDPOINT + '/check?linkCode=' + 
               encodeURIComponent(settings.linkCode) + 
@@ -225,7 +248,7 @@ function checkForPings() {
 // Start polling for pings
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  if (settings.isConfigured) {
+  if (settings.isRegistered) {
     pollTimer = setInterval(checkForPings, POLL_INTERVAL);
     console.log('Polling started');
   }
@@ -258,8 +281,9 @@ function init() {
   
   drawMainScreen();
   
-  if (settings.isConfigured) {
+  if (settings.isConfigured && !settings.isRegistered) {
     registerWithBackend();
+  } else if (settings.isRegistered) {
     startPolling();
   }
 }
