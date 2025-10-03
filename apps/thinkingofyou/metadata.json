@@ -2,6 +2,7 @@
   "id": "thinkingofyou",
   "name": "Thinking of You",
   "shortName": "ThinkU",
+  "icon": "app.png",
   "version": "0.01",
   "description": "Send and receive 'thinking of you' pings with your partner. Press the button to let them know you're thinking of them!",
   "icon": "app.png",
