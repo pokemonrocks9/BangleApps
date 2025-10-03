@@ -1,7 +1,6 @@
 (function(back) {
   const CONFIGURL = "https://pokemonrocks9.github.io/thinking-of-you-config/";
   
-  // Load current settings
   const storage = require('Storage');
   const settings = storage.readJSON('thinkingofyou.json', true) || {};
   
@@ -14,20 +13,17 @@
     return code;
   }
   
-  // Generate link code if needed
   if (!settings.linkCode) {
     settings.linkCode = generateLinkCode();
     storage.writeJSON('thinkingofyou.json', settings);
   }
   
-  // Build URL with current settings
   const url = CONFIGURL + '?' + 
               'linkCode=' + encodeURIComponent(settings.linkCode || '') +
               '&myName=' + encodeURIComponent(settings.myName || '') +
               '&partnerName=' + encodeURIComponent(settings.partnerName || '') +
               '&webhookUrl=' + encodeURIComponent(settings.webhookUrl || '');
   
-  // For App Loader detection - return the URL directly
   return {
     url: url,
     back: function(newSettings) {
@@ -36,10 +32,8 @@
         return;
       }
       
-      // Load existing settings
       const currentSettings = storage.readJSON('thinkingofyou.json', true) || {};
       
-      // Update with new values
       if (newSettings.myName) {
         currentSettings.myName = newSettings.myName;
       }
@@ -52,18 +46,14 @@
         currentSettings.webhookUrl = newSettings.webhookUrl;
       }
       
-      // Handle joining with partner's link code
       if (newSettings.partnerLinkCode) {
         currentSettings.linkCode = newSettings.partnerLinkCode;
       }
       
-      // Update configured status
       currentSettings.isConfigured = (currentSettings.myName !== '' && currentSettings.myName !== undefined);
       
-      // Save updated settings
       storage.writeJSON('thinkingofyou.json', currentSettings);
       
-      // Return to app
       back();
     }
   };
