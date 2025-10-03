@@ -76,7 +76,7 @@ function drawMainScreen(statusOverride) {
   // Instruction text - smaller
   g.setFont('6x8', 1.5);
   if (settings.isConfigured) {
-    g.drawString('Press SELECT', g.getWidth() / 2, 130);
+    g.drawString('Press button', g.getWidth() / 2, 130);
     g.drawString('to send', g.getWidth() / 2, 148);
   } else {
     g.drawString('Open settings', g.getWidth() / 2, 130);
@@ -96,7 +96,7 @@ function showNotification() {
   g.setFont('6x8', 2);
   g.setFontAlign(0, 0);
   
-  g.drawString(settings.partnerName, g.getWidth() / 2, 70);
+  g.drawString(settings.partnerName || 'Partner', g.getWidth() / 2, 70);
   
   g.setFont('6x8', 1.5);
   g.drawString('is thinking', g.getWidth() / 2, 100);
@@ -240,23 +240,28 @@ function stopPolling() {
   }
 }
 
-// Button handler
-function onButton() {
-  sendPing();
-}
-
 // Initialize app
 function init() {
+  // Load widgets first
+  Bangle.loadWidgets();
+  Bangle.drawWidgets();
+  
   loadSettings();
+  
+  // Set up UI with button handler
+  Bangle.setUI({
+    mode: "custom",
+    btn: function(n) {
+      sendPing();
+    }
+  });
+  
   drawMainScreen();
   
   if (settings.isConfigured) {
     registerWithBackend();
     startPolling();
   }
-  
-  // Set up button handler - BTN1 to send ping
-  setWatch(onButton, BTN1, { repeat: true, edge: 'falling' });
 }
 
 // Clean up when app exits
