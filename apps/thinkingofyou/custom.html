@@ -65,146 +65,141 @@
     <script src="../../core/lib/customize.js"></script>
     <script>
       (function() {
+        const API_ENDPOINT = 'https://mute-elsinore-pokyplays-01040d8f.koyeb.app/api';
+        
+        function generateLinkCode() {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+          }
+          return code;
+        }
+        
+        let currentSettings = {};
         try {
-          const API_ENDPOINT = 'https://mute-elsinore-pokyplays-01040d8f.koyeb.app/api';
-          
-          function generateLinkCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-              code += chars[Math.floor(Math.random() * chars.length)];
+          const stored = localStorage.getItem('thinkingofyou_settings');
+          if (stored) currentSettings = JSON.parse(stored);
+        } catch (e) {}
+        
+        if (!currentSettings.linkCode) {
+          currentSettings.linkCode = generateLinkCode();
+        }
+        
+        document.getElementById('myName').value = currentSettings.myName || '';
+        document.getElementById('linkCodeDisplay').textContent = currentSettings.linkCode;
+        document.getElementById('webhookUrl').value = currentSettings.webhookUrl || '';
+        
+        document.querySelectorAll('input[name="setupType"]').forEach(function(radio) {
+          radio.addEventListener('change', function() {
+            if (this.value === 'create') {
+              document.getElementById('createSection').style.display = 'block';
+              document.getElementById('joinSection').style.display = 'none';
+            } else {
+              document.getElementById('createSection').style.display = 'none';
+              document.getElementById('joinSection').style.display = 'block';
             }
-            return code;
+          });
+        });
+        
+        document.getElementById('partnerLinkCode').addEventListener('input', function(e) {
+          this.value = this.value.toUpperCase();
+          document.getElementById('nameSelectionSection').style.display = 'none';
+        });
+        
+        document.getElementById('checkCode').addEventListener('click', function() {
+          const code = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
+          const errorMsg = document.getElementById('errorMessage');
+          
+          if (code.length !== 6) {
+            errorMsg.textContent = 'Please enter a valid 6-character link code';
+            errorMsg.style.display = 'block';
+            return;
           }
           
-          let currentSettings = {};
-          try {
-            const stored = localStorage.getItem('thinkingofyou_settings');
-            if (stored) currentSettings = JSON.parse(stored);
-          } catch (e) {
-            console.log('Could not load settings:', e);
-          }
+          errorMsg.style.display = 'none';
           
-          if (!currentSettings.linkCode) {
-            currentSettings.linkCode = generateLinkCode();
-          }
-          
-          document.getElementById('myName').value = currentSettings.myName || '';
-          document.getElementById('linkCodeDisplay').textContent = currentSettings.linkCode;
-          document.getElementById('webhookUrl').value = currentSettings.webhookUrl || '';
-          
-          document.querySelectorAll('input[name="setupType"]').forEach(function(radio) {
-            radio.addEventListener('change', function() {
-              if (this.value === 'create') {
-                document.getElementById('createSection').style.display = 'block';
-                document.getElementById('joinSection').style.display = 'none';
-              } else {
-                document.getElementById('createSection').style.display = 'none';
-                document.getElementById('joinSection').style.display = 'block';
+          fetch(API_ENDPOINT + '/whoIsRegistered?linkCode=' + code)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+              if (!data.exists || data.registeredNames.length === 0) {
+                errorMsg.textContent = 'No one has registered with this code yet';
+                errorMsg.style.display = 'block';
+                return;
               }
+              
+              const nameButtons = document.getElementById('nameButtons');
+              nameButtons.innerHTML = '';
+              
+              data.registeredNames.forEach(function(name) {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.textContent = name;
+                btn.style.marginRight = '5px';
+                btn.style.marginBottom = '5px';
+                btn.onclick = function() {
+                  document.getElementById('myName').value = name;
+                  document.querySelectorAll('#nameButtons .btn').forEach(function(b) {
+                    b.classList.remove('btn-primary');
+                  });
+                  btn.classList.add('btn-primary');
+                };
+                nameButtons.appendChild(btn);
+              });
+              
+              document.getElementById('nameSelectionSection').style.display = 'block';
+            })
+            .catch(function(error) {
+              errorMsg.textContent = 'Error checking link code. Please try again.';
+              errorMsg.style.display = 'block';
             });
-          });
+        });
+        
+        document.getElementById('upload').addEventListener('click', function() {
+          const myNameInput = document.getElementById('myName').value.trim();
+          const setupType = document.querySelector('input[name="setupType"]:checked').value;
+          const errorMsg = document.getElementById('errorMessage');
           
-          document.getElementById('partnerLinkCode').addEventListener('input', function(e) {
-            this.value = this.value.toUpperCase();
-            document.getElementById('nameSelectionSection').style.display = 'none';
-          });
+          if (!myNameInput) {
+            errorMsg.textContent = 'Please enter your name';
+            errorMsg.style.display = 'block';
+            return;
+          }
           
-          document.getElementById('checkCode').addEventListener('click', function() {
-            const code = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
-            const errorMsg = document.getElementById('errorMessage');
-            
-            if (code.length !== 6) {
+          let partnerLinkCode = '';
+          let webhookUrlValue = '';
+          
+          if (setupType === 'join') {
+            partnerLinkCode = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
+            if (partnerLinkCode.length !== 6) {
               errorMsg.textContent = 'Please enter a valid 6-character link code';
               errorMsg.style.display = 'block';
               return;
             }
-            
-            errorMsg.style.display = 'none';
-            
-            fetch(API_ENDPOINT + '/whoIsRegistered?linkCode=' + code)
-              .then(function(response) { return response.json(); })
-              .then(function(data) {
-                if (!data.exists || data.registeredNames.length === 0) {
-                  errorMsg.textContent = 'No one has registered with this code yet';
-                  errorMsg.style.display = 'block';
-                  return;
-                }
-                
-                const nameButtons = document.getElementById('nameButtons');
-                nameButtons.innerHTML = '';
-                
-                data.registeredNames.forEach(function(name) {
-                  const btn = document.createElement('button');
-                  btn.className = 'btn';
-                  btn.textContent = name;
-                  btn.style.marginRight = '5px';
-                  btn.style.marginBottom = '5px';
-                  btn.onclick = function() {
-                    document.getElementById('myName').value = name;
-                    document.querySelectorAll('#nameButtons .btn').forEach(function(b) {
-                      b.classList.remove('btn-primary');
-                    });
-                    btn.classList.add('btn-primary');
-                  };
-                  nameButtons.appendChild(btn);
-                });
-                
-                document.getElementById('nameSelectionSection').style.display = 'block';
-              })
-              .catch(function(error) {
-                errorMsg.textContent = 'Error checking link code. Please try again.';
-                errorMsg.style.display = 'block';
-              });
-          });
+          } else {
+            webhookUrlValue = document.getElementById('webhookUrl').value.trim();
+          }
           
-          document.getElementById('upload').addEventListener('click', function() {
-            const myNameInput = document.getElementById('myName').value.trim();
-            const setupType = document.querySelector('input[name="setupType"]:checked').value;
-            const errorMsg = document.getElementById('errorMessage');
-            
-            if (!myNameInput) {
-              errorMsg.textContent = 'Please enter your name';
-              errorMsg.style.display = 'block';
-              return;
-            }
-            
-            let partnerLinkCode = '';
-            let webhookUrlValue = '';
-            
-            if (setupType === 'join') {
-              partnerLinkCode = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
-              if (partnerLinkCode.length !== 6) {
-                errorMsg.textContent = 'Please enter a valid 6-character link code';
-                errorMsg.style.display = 'block';
-                return;
+          const settings = {
+            myName: myNameInput,
+            webhookUrl: webhookUrlValue,
+            linkCode: setupType === 'join' ? partnerLinkCode : currentSettings.linkCode,
+            isConfigured: true
+          };
+          
+          localStorage.setItem('thinkingofyou_settings', JSON.stringify(settings));
+          
+          // Fix: Match the expected format for sendCustomizedApp
+          sendCustomizedApp({
+            storage: [
+              {
+                name: "thinkingofyou.json",
+                url: "thinkingofyou.json",
+                content: JSON.stringify(settings)
               }
-            } else {
-              webhookUrlValue = document.getElementById('webhookUrl').value.trim();
-            }
-            
-            const settings = {
-              myName: myNameInput,
-              webhookUrl: webhookUrlValue,
-              linkCode: setupType === 'join' ? partnerLinkCode : currentSettings.linkCode,
-              isConfigured: true
-            };
-            
-            localStorage.setItem('thinkingofyou_settings', JSON.stringify(settings));
-            
-            sendCustomizedApp({
-              storage: [
-                {
-                  name: "thinkingofyou.json",
-                  content: JSON.stringify(settings)
-                }
-              ]
-            });
+            ]
           });
-        } catch (e) {
-          console.error('Error in custom.html:', e);
-          alert('Error loading configuration: ' + e.message);
-        }
+        });
       })();
     </script>
   </body>
