@@ -4,9 +4,9 @@
   </head>
   <body>
     <h3>Thinking of You Configuration</h3>
-    <p>Configure your settings on the web interface.</p>
-    <p>Your unique link code will be generated automatically.</p>
+    <p>Click the button below to configure your connection settings.</p>
     <p><button id="configure" class="btn btn-primary">Open Configuration</button></p>
+    <p id="status"></p>
     
     <script src="../../core/lib/customize.js"></script>
     <script>
@@ -24,9 +24,6 @@
             code += chars[Math.floor(Math.random() * chars.length)];
           }
           settings.linkCode = code;
-          
-          // Save the generated link code
-          Puck.write('require("Storage").writeJSON("thinkingofyou.json", ' + JSON.stringify(settings) + ');\n');
         }
         
         // Build URL with current settings
@@ -36,10 +33,71 @@
                     '&partnerName=' + encodeURIComponent(settings.partnerName || '') +
                     '&webhookUrl=' + encodeURIComponent(settings.webhookUrl || '');
         
-        // Open configuration in new window when button clicked
-        document.getElementById("configure").addEventListener("click", function() {
-          window.open(url, '_blank');
+        let configWindow;
+        
+        // Listen for messages from the config window
+        window.addEventListener('message', function(event) {
+          if (event.data && event.data.type === 'ok') {
+            const newSettings = event.data.data;
+            handleConfigReturn(newSettings, settings);
+          }
         });
+        
+        // Open configuration window
+        document.getElementById("configure").addEventListener("click", function() {
+          document.getElementById("status").textContent = "Opening configuration...";
+          configWindow = window.open(url, '_blank', 'width=500,height=700');
+          
+          // Poll for hash changes (fallback method)
+          const checkInterval = setInterval(function() {
+            if (configWindow && configWindow.closed) {
+              clearInterval(checkInterval);
+              document.getElementById("status").textContent = "Configuration window closed.";
+            }
+            
+            try {
+              if (configWindow && configWindow.location.hash) {
+                const hash = configWindow.location.hash.substring(1);
+                if (hash) {
+                  const newSettings = JSON.parse(decodeURIComponent(hash));
+                  handleConfigReturn(newSettings, settings);
+                  clearInterval(checkInterval);
+                  configWindow.close();
+                }
+              }
+            } catch (e) {
+              // Cross-origin, can't access - that's fine
+            }
+          }, 500);
+        });
+        
+        function handleConfigReturn(newSettings, currentSettings) {
+          document.getElementById("status").textContent = "Saving settings...";
+          
+          // Update settings
+          if (newSettings.myName) {
+            currentSettings.myName = newSettings.myName;
+          }
+          
+          if (newSettings.partnerName) {
+            currentSettings.partnerName = newSettings.partnerName;
+          }
+          
+          if (newSettings.webhookUrl !== undefined) {
+            currentSettings.webhookUrl = newSettings.webhookUrl;
+          }
+          
+          if (newSettings.partnerLinkCode) {
+            currentSettings.linkCode = newSettings.partnerLinkCode;
+          }
+          
+          currentSettings.isConfigured = (currentSettings.myName !== '' && currentSettings.myName !== undefined);
+          
+          // Write back to watch
+          Puck.write('require("Storage").writeJSON("thinkingofyou.json", ' + JSON.stringify(currentSettings) + ');\n', function() {
+            document.getElementById("status").innerHTML = "<strong style='color: green;'>✓ Settings saved successfully!</strong>";
+          });
+        }
       });
     </script>
   </body>
