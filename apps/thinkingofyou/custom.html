@@ -1,104 +1,364 @@
 <html>
   <head>
     <link rel="stylesheet" href="../../css/spectre.min.css">
+    <style>
+      .container {
+        padding: 20px;
+      }
+      .heart {
+        font-size: 40px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+      .section h2 {
+        font-size: 18px;
+        color: #667eea;
+        margin-bottom: 15px;
+      }
+      .link-code-display {
+        background: #667eea;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin: 15px 0;
+      }
+      .link-code-display .code {
+        font-size: 32px;
+        font-weight: bold;
+        letter-spacing: 4px;
+        font-family: monospace;
+        margin: 10px 0;
+      }
+      .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .warning-box {
+        background: #fff3e0;
+        border-left: 4px solid #ff9800;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .success-box {
+        background: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .radio-option {
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      .radio-option:hover {
+        border-color: #667eea;
+        background: #f5f7ff;
+      }
+      .radio-option.selected {
+        border-color: #667eea;
+        background: #f5f7ff;
+      }
+      .name-button {
+        width: 100%;
+        padding: 15px;
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+      .name-button:hover {
+        background: #f5f7ff;
+      }
+      .name-button.selected {
+        background: #667eea;
+        color: white;
+      }
+      .hidden {
+        display: none;
+      }
+      .error {
+        color: #d32f2f;
+        font-size: 14px;
+        margin-top: 10px;
+      }
+    </style>
   </head>
   <body>
-    <h3>Thinking of You Configuration</h3>
-    <p>Click the button below to configure your connection settings.</p>
-    <p><button id="configure" class="btn btn-primary">Open Configuration</button></p>
-    <p id="status"></p>
+    <div class="container">
+      <div class="heart">♥</div>
+      <h1 style="text-align: center; color: #667eea;">Thinking of You</h1>
+      <p style="text-align: center; color: #666; margin-bottom: 30px;">Stay connected across the distance</p>
+      
+      <div class="section">
+        <h2>Your Information</h2>
+        <label for="myName">Your Name</label>
+        <input type="text" id="myName" class="form-input" placeholder="Enter your name" maxlength="30">
+        <div id="nameChangeWarning" class="warning-box hidden">
+          ⚠️ Changing your name will update it for this connection.
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>Connection Setup</h2>
+        <div class="radio-group">
+          <label class="radio-option" id="createOption">
+            <input type="radio" name="setupType" value="create" checked>
+            <strong>Create New Connection</strong><br>
+            <small>Start a new connection and share your code</small>
+          </label>
+          
+          <label class="radio-option" id="joinOption">
+            <input type="radio" name="setupType" value="join">
+            <strong>Join Existing Connection</strong><br>
+            <small>Enter your partner's code to connect</small>
+          </label>
+        </div>
+        
+        <div id="createSection">
+          <div class="link-code-display">
+            <div style="font-size: 14px; opacity: 0.9;">Your Link Code</div>
+            <div class="code" id="linkCodeDisplay">------</div>
+            <div style="font-size: 14px; opacity: 0.9;">Share this code with your partner</div>
+          </div>
+          <div class="info-box">
+            📱 Your partner should select "Join Existing Connection" and enter this code to connect with you.
+          </div>
+          
+          <label for="webhookUrl">Discord Webhook URL (Optional)</label>
+          <input type="text" id="webhookUrl" class="form-input" placeholder="https://discord.com/api/webhooks/...">
+          <div class="info-box">
+            💬 For instant Discord notifications, create a webhook and paste the URL here.
+          </div>
+        </div>
+        
+        <div id="joinSection" class="hidden">
+          <label for="partnerLinkCode">Partner's Link Code</label>
+          <input type="text" id="partnerLinkCode" class="form-input" placeholder="Enter 6-character code" maxlength="6" style="text-transform: uppercase;">
+          <button type="button" class="btn btn-primary" onclick="checkLinkCode()" style="margin-top: 10px;">Check Code</button>
+          
+          <div id="nameSelectionSection" class="hidden">
+            <div class="success-box">
+              ✓ Found existing connection! Which person are you?
+            </div>
+            <div id="nameButtons"></div>
+          </div>
+          
+          <div class="info-box">
+            🔗 Ask your partner for their 6-character link code and enter it here.
+          </div>
+        </div>
+      </div>
+      
+      <div class="error hidden" id="errorMessage"></div>
+      
+      <button class="btn btn-primary btn-lg" style="width: 100%;" onclick="saveConfig()">Save & Upload to Watch ♥</button>
+    </div>
     
     <script src="../../core/lib/customize.js"></script>
     <script>
-      const CONFIGURL = "https://pokemonrocks9.github.io/thinking-of-you-config/";
+      const API_ENDPOINT = 'https://mute-elsinore-pokyplays-01040d8f.koyeb.app/api';
       
-      // Read existing settings from the watch
-      Puck.eval('require("Storage").readJSON("thinkingofyou.json", true)', function(settings) {
-        if (!settings) settings = {};
-        
-        // Generate link code if it doesn't exist
-        if (!settings.linkCode) {
-          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-          let code = '';
-          for (let i = 0; i < 6; i++) {
-            code += chars[Math.floor(Math.random() * chars.length)];
-          }
-          settings.linkCode = code;
+      // Generate a random 6-character link code
+      function generateLinkCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+          code += chars[Math.floor(Math.random() * chars.length)];
         }
-        
-        // Build URL with current settings
-        const url = CONFIGURL + '?' + 
-                    'linkCode=' + encodeURIComponent(settings.linkCode || '') +
-                    '&myName=' + encodeURIComponent(settings.myName || '') +
-                    '&partnerName=' + encodeURIComponent(settings.partnerName || '') +
-                    '&webhookUrl=' + encodeURIComponent(settings.webhookUrl || '');
-        
-        let configWindow;
-        
-        // Listen for messages from the config window
-        window.addEventListener('message', function(event) {
-          if (event.data && event.data.type === 'ok') {
-            const newSettings = event.data.data;
-            handleConfigReturn(newSettings, settings);
-          }
-        });
-        
-        // Open configuration window
-        document.getElementById("configure").addEventListener("click", function() {
-          document.getElementById("status").textContent = "Opening configuration...";
-          configWindow = window.open(url, '_blank', 'width=500,height=700');
-          
-          // Poll for hash changes (fallback method)
-          const checkInterval = setInterval(function() {
-            if (configWindow && configWindow.closed) {
-              clearInterval(checkInterval);
-              document.getElementById("status").textContent = "Configuration window closed.";
-            }
-            
-            try {
-              if (configWindow && configWindow.location.hash) {
-                const hash = configWindow.location.hash.substring(1);
-                if (hash) {
-                  const newSettings = JSON.parse(decodeURIComponent(hash));
-                  handleConfigReturn(newSettings, settings);
-                  clearInterval(checkInterval);
-                  configWindow.close();
-                }
-              }
-            } catch (e) {
-              // Cross-origin, can't access - that's fine
-            }
-          }, 500);
-        });
-        
-        function handleConfigReturn(newSettings, currentSettings) {
-          document.getElementById("status").textContent = "Saving settings...";
-          
-          // Update settings
-          if (newSettings.myName) {
-            currentSettings.myName = newSettings.myName;
-          }
-          
-          if (newSettings.partnerName) {
-            currentSettings.partnerName = newSettings.partnerName;
-          }
-          
-          if (newSettings.webhookUrl !== undefined) {
-            currentSettings.webhookUrl = newSettings.webhookUrl;
-          }
-          
-          if (newSettings.partnerLinkCode) {
-            currentSettings.linkCode = newSettings.partnerLinkCode;
-          }
-          
-          currentSettings.isConfigured = (currentSettings.myName !== '' && currentSettings.myName !== undefined);
-          
-          // Write back to watch
-          Puck.write('require("Storage").writeJSON("thinkingofyou.json", ' + JSON.stringify(currentSettings) + ');\n', function() {
-            document.getElementById("status").innerHTML = "<strong style='color: green;'>✓ Settings saved successfully!</strong>";
-          });
+        return code;
+      }
+      
+      // Read settings from localStorage (App Loader stores current settings here)
+      let currentSettings = {};
+      try {
+        const stored = localStorage.getItem('thinkingofyou_settings');
+        if (stored) {
+          currentSettings = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.log('No stored settings');
+      }
+      
+      // Initialize link code if needed
+      if (!currentSettings.linkCode) {
+        currentSettings.linkCode = generateLinkCode();
+      }
+      
+      const originalMyName = currentSettings.myName || '';
+      let selectedMyName = '';
+      
+      // Populate form
+      document.getElementById('myName').value = currentSettings.myName || '';
+      document.getElementById('linkCodeDisplay').textContent = currentSettings.linkCode || '------';
+      document.getElementById('webhookUrl').value = currentSettings.webhookUrl || '';
+      
+      // Name change warning
+      document.getElementById('myName').addEventListener('input', function() {
+        const nameChangeWarning = document.getElementById('nameChangeWarning');
+        if (originalMyName && this.value.trim() !== originalMyName) {
+          nameChangeWarning.classList.remove('hidden');
+        } else {
+          nameChangeWarning.classList.add('hidden');
         }
       });
+      
+      // Radio button handling
+      const createOption = document.getElementById('createOption');
+      const joinOption = document.getElementById('joinOption');
+      const createSection = document.getElementById('createSection');
+      const joinSection = document.getElementById('joinSection');
+      
+      document.querySelectorAll('input[name="setupType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+          if (this.value === 'create') {
+            createSection.classList.remove('hidden');
+            joinSection.classList.add('hidden');
+            createOption.classList.add('selected');
+            joinOption.classList.remove('selected');
+          } else {
+            createSection.classList.add('hidden');
+            joinSection.classList.remove('hidden');
+            createOption.classList.remove('selected');
+            joinOption.classList.add('selected');
+          }
+        });
+      });
+      
+      document.getElementById('partnerLinkCode').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+        document.getElementById('nameSelectionSection').classList.add('hidden');
+      });
+      
+      // Check link code
+      async function checkLinkCode() {
+        const code = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
+        const errorMsg = document.getElementById('errorMessage');
+        
+        if (code.length !== 6) {
+          errorMsg.textContent = 'Please enter a valid 6-character link code';
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+        
+        errorMsg.classList.add('hidden');
+        
+        try {
+          const response = await fetch(`${API_ENDPOINT}/whoIsRegistered?linkCode=${code}`);
+          const data = await response.json();
+          
+          if (!data.exists || data.registeredNames.length === 0) {
+            errorMsg.textContent = 'No one has registered with this code yet';
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+          
+          const nameButtons = document.getElementById('nameButtons');
+          nameButtons.innerHTML = '';
+          
+          data.registeredNames.forEach(name => {
+            const btn = document.createElement('button');
+            btn.className = 'name-button';
+            btn.textContent = name;
+            btn.onclick = function() {
+              selectName(name);
+            };
+            nameButtons.appendChild(btn);
+          });
+          
+          document.getElementById('nameSelectionSection').classList.remove('hidden');
+          
+        } catch (error) {
+          errorMsg.textContent = 'Error checking link code. Please try again.';
+          errorMsg.classList.remove('hidden');
+        }
+      }
+      
+      function selectName(name) {
+        selectedMyName = name;
+        document.getElementById('myName').value = name;
+        
+        document.querySelectorAll('.name-button').forEach(btn => {
+          if (btn.textContent === name) {
+            btn.classList.add('selected');
+          } else {
+            btn.classList.remove('selected');
+          }
+        });
+      }
+      
+      // Save configuration
+      function saveConfig() {
+        const myNameInput = document.getElementById('myName').value.trim();
+        const setupType = document.querySelector('input[name="setupType"]:checked').value;
+        const errorMsg = document.getElementById('errorMessage');
+        
+        if (!myNameInput) {
+          errorMsg.textContent = 'Please enter your name';
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+        
+        let partnerLinkCode = '';
+        let webhookUrlValue = '';
+        
+        if (setupType === 'join') {
+          partnerLinkCode = document.getElementById('partnerLinkCode').value.trim().toUpperCase();
+          if (partnerLinkCode.length !== 6) {
+            errorMsg.textContent = 'Please enter a valid 6-character link code';
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+        } else {
+          webhookUrlValue = document.getElementById('webhookUrl').value.trim();
+        }
+        
+        // Build settings object
+        const settings = {
+          myName: myNameInput,
+          webhookUrl: webhookUrlValue,
+          linkCode: currentSettings.linkCode
+        };
+        
+        if (setupType === 'join') {
+          settings.linkCode = partnerLinkCode;
+        }
+        
+        settings.isConfigured = true;
+        
+        // Save to localStorage for next time
+        localStorage.setItem('thinkingofyou_settings', JSON.stringify(settings));
+        
+        // Send to watch using sendCustomizedApp
+        sendCustomizedApp({
+          storage: [
+            {
+              name: "thinkingofyou.json",
+              content: JSON.stringify(settings)
+            }
+          ]
+        });
+      }
     </script>
   </body>
 </html>
