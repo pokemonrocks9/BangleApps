@@ -7,6 +7,7 @@
   "icon": "app.png",
   "type": "app",
   "tags": "social,communication,tool",
+  "supports": ["BANGLEJS2"],
   "storage": [
     {"name": "thinkingofyou.app.js", "url": "app.js"},
     {"name": "thinkingofyou.settings.js", "url": "settings.js"}
