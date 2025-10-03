@@ -22,7 +22,7 @@ function loadSettings() {
   settings.partnerName = stored.partnerName || '';
   settings.linkCode = stored.linkCode || generateLinkCode();
   settings.webhookUrl = stored.webhookUrl || '';
-  settings.isConfigured = settings.myName !== '' && settings.partnerName !== '';
+  settings.isConfigured = settings.myName !== '' && settings.linkCode !== '';
   
   // Save link code if it was just generated
   if (!stored.linkCode) {
