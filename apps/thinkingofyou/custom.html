@@ -17,7 +17,7 @@
   </head>
   <body>
     <div class="container">
-      <div class="version">Config v0.1</div>
+      <div class="version">Config v0.2</div>
       <p><b>Thinking of You Setup</b></p>
       <p>Configure your connection to send and receive pings with your partner.</p>
       
@@ -196,14 +196,14 @@
           
           localStorage.setItem('thinkingofyou_settings', JSON.stringify(settings));
           
+          // Match OpenHaystack format exactly - content field with url that's not a real URL
+          var settingsJSON = JSON.stringify(settings);
           sendCustomizedApp({
-            storage: [
-              {
-                name: "thinkingofyou.json",
-                url: "thinkingofyou.json",
-                content: JSON.stringify(settings)
-              }
-            ]
+            storage: [{
+              name: "thinkingofyou.json",
+              content: settingsJSON,
+              url: "thinkingofyou.json" // not a real URL but lets App Loader know it's a file
+            }]
           });
         });
       })();
