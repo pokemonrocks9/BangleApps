@@ -1,0 +1,46 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="../../css/spectre.min.css">
+  </head>
+  <body>
+    <h3>Thinking of You Configuration</h3>
+    <p>Configure your settings on the web interface.</p>
+    <p>Your unique link code will be generated automatically.</p>
+    <p><button id="configure" class="btn btn-primary">Open Configuration</button></p>
+    
+    <script src="../../core/lib/customize.js"></script>
+    <script>
+      const CONFIGURL = "https://pokemonrocks9.github.io/thinking-of-you-config/";
+      
+      // Read existing settings from the watch
+      Puck.eval('require("Storage").readJSON("thinkingofyou.json", true)', function(settings) {
+        if (!settings) settings = {};
+        
+        // Generate link code if it doesn't exist
+        if (!settings.linkCode) {
+          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+          }
+          settings.linkCode = code;
+          
+          // Save the generated link code
+          Puck.write('require("Storage").writeJSON("thinkingofyou.json", ' + JSON.stringify(settings) + ');\n');
+        }
+        
+        // Build URL with current settings
+        const url = CONFIGURL + '?' + 
+                    'linkCode=' + encodeURIComponent(settings.linkCode || '') +
+                    '&myName=' + encodeURIComponent(settings.myName || '') +
+                    '&partnerName=' + encodeURIComponent(settings.partnerName || '') +
+                    '&webhookUrl=' + encodeURIComponent(settings.webhookUrl || '');
+        
+        // Open configuration in new window when button clicked
+        document.getElementById("configure").addEventListener("click", function() {
+          window.open(url, '_blank');
+        });
+      });
+    </script>
+  </body>
+</html>
