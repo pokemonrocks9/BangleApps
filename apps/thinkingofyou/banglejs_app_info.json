@@ -1,0 +1,19 @@
+{
+  "id": "thinkingofyou",
+  "name": "Thinking of You",
+  "shortName": "ThinkU",
+  "version": "0.01",
+  "description": "Send and receive 'thinking of you' pings with your partner. Press the button to let them know you're thinking of them!",
+  "icon": "app.png",
+  "type": "app",
+  "tags": "social,communication,tool",
+  "storage": [
+    {"name": "thinkingofyou.app.js", "url": "app.js"},
+    {"name": "thinkingofyou.info", "url": "app.info"},
+    {"name": "thinkingofyou.settings.js", "url": "settings.js"}
+  ],
+  "data": {
+    "name": "Thinking of You",
+    "settings": true
+  }
+}
