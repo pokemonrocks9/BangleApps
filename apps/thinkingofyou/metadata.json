@@ -11,6 +11,7 @@
   "storage": [
     {"name": "thinkingofyou.app.js", "url": "app.js"},
     {"name": "thinkingofyou.settings.js", "url": "settings.js"}
+    {"name":"thinkingofyou.img","url":"app-icon.js","evaluate":true}
   ],
   "data": {
     "name": "Thinking of You",
