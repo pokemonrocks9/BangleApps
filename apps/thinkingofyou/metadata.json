@@ -14,7 +14,8 @@
      {"name": "thinkingofyou.settings.js", "url": "settings.js"},
     {"name":"thinkingofyou.img","url":"app-icon.js","evaluate":true}
   ],
-  "data": {
+  "data": [{"name":"myapp.json"}],
+  {
     "name": "Thinking of You",
     "settings": true
   }
